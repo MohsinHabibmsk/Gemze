@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemze Exam - Direct Access Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); }
+        
+        .course-box { background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; cursor: pointer; transition: 0.3s; }
+        .course-box:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .exam-options { display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f1f5f9; max-height: 250px; overflow-y: auto; }
+        .exam-options button { background: #eff6ff; color: #1e40af; padding: 0.5rem 0.8rem; border-radius: 6px; margin: 3px; font-size: 0.75rem; font-weight: 800; border: 1px solid #dbeafe; }
+        .exam-options button:hover { background: var(--primary); color: white; }
+
+        #quiz-layout { display: none; gap: 2rem; max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .quiz-content { flex: 3; background: white; padding: 2.5rem; border-radius: 1.5rem; border: 1px solid #e2e8f0; }
+        .sidebar { flex: 1; background: white; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; height: fit-content; position: sticky; top: 20px; }
+        
+        .question-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-top: 1rem; max-height: 400px; overflow-y: auto; }
+        .question-tabs button { padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-weight: bold; font-size: 0.8rem; height: 40px; }
+        .question-tabs button.active { background: var(--primary); color: white; }
+        .question-tabs button.answered { background: #dcfce7; color: #166534; }
+        .question-tabs button.flagged { background: #fef9c3 !important; border: 2px solid #eab308 !important; }
+
+        .progress { height: 100%; background: var(--primary); transition: width 0.3s; width: 0%; }
+        label { display: block; padding: 1.2rem; border: 2px solid #f1f5f9; border-radius: 1rem; margin-bottom: 0.75rem; cursor: pointer; }
+        label.selected { border-color: var(--primary); background: #eff6ff; }
+        #answerDisplay { display: none; margin-top: 1.5rem; padding: 1.5rem; background: #f0fdf4; border-left: 5px solid #22c55e; border-radius: 0.75rem; }
+
+        /* Custom confirmation modal */
+        #submitConfirmModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        #submitConfirmModal .modal-content {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+
+        @media (max-width: 768px) {
+            #quiz-layout { flex-direction: column; margin: 1rem auto; gap: 1rem; }
+            .quiz-content { padding: 1.5rem; border-radius: 1rem; }
+            .sidebar { position: static; order: 2; margin-bottom: 2rem; }
+            .question-tabs { grid-template-columns: repeat(6, 1fr); }
+            button { min-height: 48px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="bg-white border-b py-4 px-6 shadow-sm sticky top-0 z-50">
+    <nav class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="text-2xl font-black text-blue-600">GEMZE <span class="text-slate-800">EXAM</span></div>
+        <div class="text-slate-400 text-xs font-bold uppercase tracking-widest">Local Database Mode</div>
+    </nav>
+</header>
+
+<div id="dashboard-view">
+    <section class="max-w-6xl mx-auto mt-10 px-6">
+        <div class="bg-white p-4 rounded-2xl border shadow-sm flex items-center gap-3 max-w-2xl mx-auto">
+            <input type="search" id="searchInput" placeholder="Search for a module..." class="w-full outline-none text-slate-700 font-medium">
+        </div>
+    </section>
+    <main class="max-w-6xl mx-auto p-6 mt-4">
+        <div id="courseContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </main>
+</div>
+
+<main id="quiz-layout">
+    <div class="quiz-content">
+        <div class="flex justify-between items-center mb-6">
+            <button onclick="location.reload()" class="text-slate-400 font-bold hover:text-red-500">✕ Exit</button>
+            <div class="bg-blue-50 text-blue-700 px-5 py-1.5 rounded-full font-black text-sm">⏱ <span id="timer">30:00</span></div>
+        </div>
+        <h1 id="activeExamTitle" class="text-2xl font-black text-slate-800">Module</h1>
+        <p class="text-sm text-slate-400 font-bold mb-4 uppercase">Question <span id="currentQuestionNum">1</span> / <span id="totalQs">0</span></p>
+        <div class="w-full h-2 bg-slate-100 rounded-full mb-8"><div class="progress rounded-full"></div></div>
+        <div id="quiz-area"></div>
+        <div id="answerDisplay"></div>
+        <div class="grid grid-cols-2 gap-4 mt-10">
+            <button id="prevBtn" class="bg-slate-100 py-4 rounded-2xl font-bold">← Previous</button>
+            <button id="nextBtn" class="bg-blue-600 text-white py-4 rounded-2xl font-bold">Next Question →</button>
+        </div>
+        <div class="flex gap-4 mt-4">
+            <button id="flagBtn" class="flex-1 border-2 py-3 rounded-2xl font-bold">Flag</button>
+            <button id="showAnswerBtn" class="flex-1 border-2 py-3 rounded-2xl font-bold">Show Answer</button>
+        </div>
+        <button id="submitBtn" class="w-full mt-8 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase">Submit Exam</button>
+    </div>
+    <div class="sidebar">
+        <h2 class="font-black text-slate-800 border-b pb-3 mb-4">Map</h2>
+        <div id="questionTabs" class="question-tabs"></div>
+    </div>
+</main>
+
+<!-- Results View -->
+<div id="results-view" class="hidden max-w-2xl mx-auto py-20 px-6 text-center">
+    <div class="bg-white p-12 rounded-3xl shadow-2xl border">
+        <h2 class="text-2xl font-black mb-2">Your Results</h2>
+        <div id="finalScore" class="text-8xl font-black text-blue-600 my-8">0%</div>
+        <p id="scoreStats" class="text-lg text-slate-500 font-bold mb-10"></p>
+        
+        <button onclick="enterReviewMode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black uppercase mb-4 transition">
+            Review Answers
+        </button>
+        <button onclick="location.reload()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase transition">
+            Back to Dashboard
+        </button>
+    </div>
+</div>
+
+<!-- Review View -->
+<div id="review-view" class="hidden max-w-4xl mx-auto py-10 px-4 sm:px-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <div>
+            <h2 class="text-3xl font-black text-slate-800">Review Your Answers</h2>
+            <p class="text-slate-500 mt-1">
+                <span id="reviewScore"></span> • <span id="reviewPercent"></span>
+            </p>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="document.getElementById('review-view').classList.add('hidden'); document.getElementById('results-view').classList.remove('hidden');"
+                class="px-6 py-2.5 bg-slate-700 text-white rounded-xl font-bold hover:bg-slate-800 transition">
+                Back to Results
+            </button>
+            <button onclick="location.reload()"
+                class="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition">
+                Exit
+            </button>
+        </div>
+    </div>
+    <div id="reviewContainer" class="space-y-8"></div>
+</div>
+
+<!-- Submit Confirmation Modal -->
+<div id="submitConfirmModal">
+    <div class="modal-content text-center">
+        <div class="w-16 h-16 mx-auto mb-6 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <h3 class="text-2xl font-bold text-slate-800 mb-3">Submit Exam?</h3>
+        <p id="submitConfirmMessage" class="text-slate-600 mb-8 text-lg"></p>
+        <div class="grid grid-cols-2 gap-4">
+            <button id="cancelSubmitBtn" class="py-4 border-2 border-slate-300 rounded-xl font-bold text-slate-700 hover:bg-slate-50 transition">
+                Cancel
+            </button>
+            <button id="confirmSubmitBtn" class="py-4 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition">
+                Submit Anyway
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const examStructure = {
+            "Advanced Drawing (ADA)": ["admin/exams/ADA001.json", "admin/exams/ADA002.json", "admin/exams/ADA003.json", "admin/exams/ADA004.json", "admin/exams/ADA005.json", "admin/exams/ADA006.json"],
+            "Advanced Drawing, NDT SRM": ["admin/exams/ADV001.json", "admin/exams/ADV002.json", "admin/exams/ADV003.json"],
+            "AE1": ["admin/exams/AE1.json", "admin/exams/ex3.json", "admin/exams/electricity_exam.json", "admin/exams/AIgenerated (1).json", "admin/exams/av1.json", "admin/exams/av2.json", "admin/exams/av3.json", "admin/exams/av4.json", "admin/exams/techersrev.json", "admin/exams/techersrev1.json"],
+            "AE2": ["admin/exams/AEX001.json", "admin/exams/AEX002.json", "admin/exams/AEX003.json", "admin/exams/AEX004.json", "admin/exams/AEX005.json", "admin/exams/AEX006.json", "admin/exams/AEX007.json", "admin/exams/AEX008.json"],
+            "Aerodynamics": ["admin/exams/a.json", "admin/exams/b.json", "admin/exams/c.json", "admin/exams/d.json", "admin/exams/e.json", "admin/exams/f.json", "admin/exams/g.json", "admin/exams/h.json", "admin/exams/i.json", "admin/exams/k.json"],
+            "Af01": ["admin/exams/AFX001.json", "admin/exams/AFX002.json", "admin/exams/AFX003.json", "admin/exams/AFX005.json", "admin/exams/AFX006.json", "admin/exams/AFX016.json"],
+            "Af02": ["admin/exams/AFX008.json", "admin/exams/AFX011.json", "admin/exams/AFX012.json", "admin/exams/AFX013.json", "admin/exams/AFX014.json", "admin/exams/AFX015.json", "admin/exams/AFX018.json", "admin/exams/AFX019.json"],
+            "AF02Wood": ["admin/exams/AFW001.json", "admin/exams/AFW002.json", "admin/exams/AFW003.json", "admin/exams/AFW004.json", "admin/exams/AFW005.json", "admin/exams/AFW006.json", "admin/exams/AFW007.json", "admin/exams/AFW008.json", "admin/exams/AFW009.json"],
+            "AF03M1": ["admin/exams/AFM012.json", "admin/exams/AFM013.json", "admin/exams/AFM014.json", "admin/exams/AFM015.json", "admin/exams/AFM016.json", "admin/exams/AFM017.json", "admin/exams/AFM018.json", "admin/exams/AFM019.json", "admin/exams/AFM020.json", "admin/exams/AFM021.json"],
+            "Af04": ["admin/exams/AFX020.json", "admin/exams/AFX021.json", "admin/exams/AFX022.json", "admin/exams/AFX023.json", "admin/exams/AFX024.json", "admin/exams/AFX025.json", "admin/exams/AFX026.json", "admin/exams/AFX027.json"],
+            "Af05": ["admin/exams/AFX029.json", "admin/exams/AFX030.json", "admin/exams/AFX031.json", "admin/exams/AFX032.json", "admin/exams/AFX033.json", "admin/exams/AFX034.json", "admin/exams/AFX035.json", "admin/exams/AFX036.json"],
+            "Af06": ["admin/exams/AFX037.json", "admin/exams/AFX038.json", "admin/exams/AFX039.json", "admin/exams/AFX040.json", "admin/exams/AFX041.json", "admin/exams/AFX042.json", "admin/exams/AFX043.json"],
+            "AF07": ["admin/exams/AFX044.json", "admin/exams/AFX045.json", "admin/exams/AFX046.json", "admin/exams/AFX047.json", "admin/exams/AFX048.json", "admin/exams/AFX049.json", "admin/exams/AFX050.json", "admin/exams/AFX051.json", "admin/exams/AFX052.json", "admin/exams/AFX053.json"],
+            "AF08": ["admin/exams/AFX054.json", "admin/exams/AFX055.json", "admin/exams/AFX056.json", "admin/exams/AFX057.json", "admin/exams/AFX058.json", "admin/exams/AFX059.json", "admin/exams/AFX060.json", "admin/exams/AFX061.json"],
+            "AF08 FROM STRUC": ["admin/exams/AFF004.json", "admin/exams/AFF005.json", "admin/exams/AFF006.json", "admin/exams/AFF007.json", "admin/exams/AFF008.json"],
+            "Af1m3": ["admin/exams/AFM001.json", "admin/exams/AFM002.json", "admin/exams/AFM003.json", "admin/exams/AFM005.json", "admin/exams/AFM006.json", "admin/exams/AFM007.json", "admin/exams/AFM008.json", "admin/exams/AFM009.json", "admin/exams/AFM010.json", "admin/exams/AFM011.json"],
+            "Aircraft electrical System": ["admin/exams/AIR004.json", "admin/exams/AIR006.json", "admin/exams/AIR007.json"],
+            "Aircraft Navigation Communication": ["admin/exams/AIR008.json", "admin/exams/AIR009.json", "admin/exams/AIR010.json", "admin/exams/AIR011.json", "admin/exams/AIR012.json", "admin/exams/AIR015.json", "admin/exams/AIR016.json", "admin/exams/AIR017.json", "admin/exams/AIR013.json", "admin/exams/AIR014.json"],
+            "Air Ele": ["admin/exams/AIR001.json", "admin/exams/AIR002.json", "admin/exams/AIR003.json"],
+            "Composite": ["admin/exams/COM001.json", "admin/exams/COM002.json", "admin/exams/COM003.json"],
+            "General Structure": ["admin/exams/GEN001.json", "admin/exams/GEN002.json"],
+            "Hardware": ["admin/exams/HAR001.json", "admin/exams/HAR002.json"],
+            "INS / INSA": ["admin/exams/INS001.json", "admin/exams/INS002.json", "admin/exams/INS003.json", "admin/exams/INS004.json", "admin/exams/INS005.json", "admin/exams/INS006.json"],
+            "NINS": ["admin/exams/NIN001.json", "admin/exams/NIN002.json", "admin/exams/NIN003.json", "admin/exams/NIN004.json", "admin/exams/NIN005.json", "admin/exams/NIN006.json", "admin/exams/NIN007.json", "admin/exams/NIN008.json", "admin/exams/NIN009.json"],
+            "Physics": ["admin/exams/phy.json", "admin/exams/phy1.json"],
+            "Powerplant": ["admin/exams/ppq5.json", "admin/exams/rev.json", "admin/exams/gt.json", "admin/exams/ppq11.json", "admin/exams/ber1.json"],
+            "Sheet Metal": ["admin/exams/SHE001.json", "admin/exams/SHE002.json", "admin/exams/SHE003.json"],
+            "TD": ["admin/exams/td.json", "admin/exams/td3.json", "admin/exams/td4.json"],
+            "Welding": ["admin/exams/WEL001.json", "admin/exams/WEL002.json", "admin/exams/WEL003.json", "admin/exams/WEL004.json", "admin/exams/WEL005.json", "admin/exams/WEL006.json", "admin/exams/WEL007.json", "admin/exams/WEL008.json"]
+        };
+
+const examCodeMap = {
+    "AE1": ["AE_011", "AE_012", "AE_013", "AE_014", "AE_015", "AE_016", "AE_017", "AE_018", "AE_019", "AE_020"],
+    "Aerodynamics": ["AER001", "AER002", "AER003", "AER004", "AER005", "AER006", "AER007", "AER008", "AER009", "AER010"],
+    "Powerplant": ["PP_001", "PP_002", "PP_004", "PP_005", "PP_006"]
+};
+
+let questions = [];
+let currentIdx = 0;
+let userAnswers = [];
+let flagged = [];
+let answerShown = [];
+let timerInt;
+
+function initDashboard() {
+    const container = document.getElementById('courseContainer');
+    container.innerHTML = '';
+    Object.keys(examStructure).forEach(course => {
+        const box = document.createElement('div');
+        box.className = 'course-box';
+        box.dataset.course = course;
+        box.innerHTML = `
+            <h3 class="text-lg font-black text-slate-800">${course}</h3>
+            <div class="exam-options">
+                ${examStructure[course].map((path, i) => {
+                    const fileName = path.split('/').pop().replace('.json', '');
+                    let label = fileName;
+                    if (examCodeMap[course]) label = examCodeMap[course][i] || fileName;
+                    return `<button onclick="loadExamDirect('${path}', '${label}')">${label}</button>`;
+                }).join('')}
+            </div>
+        `;
+        box.onclick = function(e) {
+            if(e.target.tagName !== 'BUTTON') {
+                const opts = this.querySelector('.exam-options');
+                const isVisible = opts.style.display === 'block';
+                document.querySelectorAll('.exam-options').forEach(o => o.style.display = 'none');
+                opts.style.display = isVisible ? 'none' : 'block';
+            }
+        };
+        container.appendChild(box);
+    });
+}
+
+async function loadExamDirect(filePath, label) {
+    try {
+        const response = await fetch(filePath);
+        if (!response.ok) throw new Error("File not found");
+        const data = await response.json();
+        questions = Array.isArray(data) ? data : (data.questions || []);
+        startExam(label);
+    } catch (err) {
+        alert(`Error loading exam:\n${filePath}\n\nMake sure you're using a local server (Live Server / http-server etc.)`);
+    }
+}
+
+function startExam(title) {
+    document.getElementById('dashboard-view').classList.add('hidden');
+    document.getElementById('quiz-layout').style.display = 'flex';
+    document.getElementById('activeExamTitle').textContent = title.toUpperCase();
+    currentIdx = 0;
+    userAnswers = Array(questions.length).fill(null);
+    flagged = Array(questions.length).fill(false);
+    answerShown = Array(questions.length).fill(false);
+    document.getElementById('totalQs').textContent = questions.length;
+    renderQuestion();
+    startTimer(30 * 60);
+}
+
+function renderQuestion() {
+    const q = questions[currentIdx];
+    const area = document.getElementById('quiz-area');
+    
+    let html = `<p class="text-xl font-bold text-slate-800 mb-8 leading-relaxed">${q.question_number || (currentIdx + 1)}. ${q.question}</p>`;
+    
+    for (let key in q.options) {
+        const isSelected = userAnswers[currentIdx] === key;
+        html += `
+            <label class="${isSelected ? 'selected' : ''}">
+                <input type="radio" name="opt" value="${key}" ${isSelected ? 'checked' : ''} onchange="saveAns('${key}')" class="hidden">
+                <span class="inline-block w-8 font-black text-blue-600">${key.toUpperCase()}</span> ${q.options[key]}
+            </label>
+        `;
+    }
+    area.innerHTML = html;
+
+    const ansDisplay = document.getElementById('answerDisplay');
+    if (answerShown[currentIdx]) {
+        ansDisplay.style.display = 'block';
+        ansDisplay.innerHTML = `
+            <div class="font-black text-green-700">Correct: ${q.correct_answer?.toUpperCase() || '?'}</div>
+            <div class="text-slate-600 text-sm mt-2">${q.explanation || 'No explanation available'}</div>
+        `;
+    } else {
+        ansDisplay.style.display = 'none';
+    }
+
+    document.getElementById('currentQuestionNum').textContent = currentIdx + 1;
+    document.getElementById('flagBtn').textContent = flagged[currentIdx] ? '🚩 Unflag' : 'Flag';
+    updateTabs();
+}
+
+function saveAns(val) {
+    userAnswers[currentIdx] = val;
+    updateTabs();
+    renderQuestion(); // refresh to show selected style
+}
+
+function updateTabs() {
+    const tabs = document.getElementById('questionTabs');
+    tabs.innerHTML = '';
+    questions.forEach((_, i) => {
+        const btn = document.createElement('button');
+        btn.textContent = i + 1;
+        if (i === currentIdx) btn.classList.add('active');
+        if (userAnswers[i]) btn.classList.add('answered');
+        if (flagged[i]) btn.classList.add('flagged');
+        btn.onclick = () => { currentIdx = i; renderQuestion(); };
+        tabs.appendChild(btn);
+    });
+    document.querySelector('.progress').style.width = ((currentIdx + 1) / questions.length * 100) + '%';
+}
+
+function startTimer(t) {
+    clearInterval(timerInt);
+    timerInt = setInterval(() => {
+        let m = Math.floor(t / 60);
+        let s = t % 60;
+        document.getElementById('timer').textContent = `${m}:${s < 10 ? '0'+s : s}`;
+        if (--t < 0) {
+            clearInterval(timerInt);
+            submitExam();
+        }
+    }, 1000);
+}
+
+// Navigation & actions
+document.getElementById('nextBtn').onclick = () => {
+    if (currentIdx < questions.length - 1) {
+        currentIdx++;
+        renderQuestion();
+    } else {
+        document.getElementById('submitBtn').click();
+    }
+};
+document.getElementById('prevBtn').onclick = () => {
+    if (currentIdx > 0) {
+        currentIdx--;
+        renderQuestion();
+    }
+};
+document.getElementById('flagBtn').onclick = () => {
+    flagged[currentIdx] = !flagged[currentIdx];
+    renderQuestion();
+};
+document.getElementById('showAnswerBtn').onclick = () => {
+    answerShown[currentIdx] = !answerShown[currentIdx];
+    renderQuestion();
+};
+
+// Submit logic with nice modal
+document.getElementById('submitBtn').onclick = () => {
+    const unanswered = userAnswers.filter(a => a === null).length;
+    const modal = document.getElementById('submitConfirmModal');
+    const msgEl = document.getElementById('submitConfirmMessage');
+
+    if (unanswered === 0) {
+        msgEl.textContent = "Ready to finish your exam?";
+        document.getElementById('confirmSubmitBtn').textContent = "Finish Exam";
+    } else {
+        msgEl.textContent = `You have ${unanswered} unanswered question${unanswered === 1 ? '' : 's'}.\nAre you sure you want to submit?`;
+        document.getElementById('confirmSubmitBtn').textContent = "Submit Anyway";
+    }
+
+    modal.style.display = 'flex';
+};
+
+document.getElementById('cancelSubmitBtn').onclick = () => {
+    document.getElementById('submitConfirmModal').style.display = 'none';
+};
+
+document.getElementById('confirmSubmitBtn').onclick = () => {
+    document.getElementById('submitConfirmModal').style.display = 'none';
+    submitExam();
+};
+
+function submitExam() {
+    clearInterval(timerInt);
+    
+    let correct = 0;
+    questions.forEach((q, i) => {
+        if (userAnswers[i] && userAnswers[i].toLowerCase() === (q.correct_answer || '').toLowerCase()) {
+            correct++;
+        }
+    });
+
+    const percentage = ((correct / questions.length) * 100).toFixed(1);
+
+    document.getElementById('finalScore').textContent = percentage + '%';
+    document.getElementById('scoreStats').textContent = `${correct} / ${questions.length} correct`;
+
+    document.getElementById('quiz-layout').style.display = 'none';
+    document.getElementById('results-view').classList.remove('hidden');
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function enterReviewMode() {
+    document.getElementById('results-view').classList.add('hidden');
+    document.getElementById('review-view').classList.remove('hidden');
+
+    const container = document.getElementById('reviewContainer');
+    container.innerHTML = '';
+
+    let correctCount = 0;
+
+    questions.forEach((q, i) => {
+        const userAns = userAnswers[i];
+        const correct = (q.correct_answer || '').toLowerCase();
+        const isCorrect = userAns === correct;
+        if (isCorrect) correctCount++;
+
+        const div = document.createElement('div');
+        div.className = 'bg-white rounded-2xl border shadow-sm overflow-hidden';
+
+        let optionsHTML = '';
+        for (let key in q.options) {
+            let className = 'p-4 border-t';
+            let extra = '';
+
+            if (key.toLowerCase() === correct) {
+                className += ' bg-green-50 border-green-300';
+                extra = '<span class="ml-3 font-bold text-green-700">CORRECT</span>';
+            }
+            if (userAns === key) {
+                if (isCorrect) {
+                    className += ' bg-green-100 border-green-400';
+                    extra = '<span class="ml-3 font-bold text-green-800">YOUR CHOICE ✓</span>';
+                } else {
+                    className += ' bg-red-50 border-red-300';
+                    extra = '<span class="ml-3 font-bold text-red-700">YOUR CHOICE</span>';
+                }
+            }
+
+            optionsHTML += `
+                <div class="${className}">
+                    <strong>${key.toUpperCase()}.</strong> ${q.options[key]}${extra}
+                </div>
+            `;
+        }
+
+        div.innerHTML = `
+            <div class="px-6 py-4 border-b bg-slate-50 flex justify-between items-center">
+                <div class="font-bold text-lg">Question ${i + 1}</div>
+                ${isCorrect ? 
+                    '<span class="px-4 py-1 bg-green-100 text-green-700 rounded-full font-bold">Correct</span>' : 
+                    '<span class="px-4 py-1 bg-red-100 text-red-700 rounded-full font-bold">Incorrect</span>'}
+            </div>
+            <div class="p-6">
+                <p class="text-lg leading-relaxed mb-6">${q.question}</p>
+                <div class="space-y-1">${optionsHTML}</div>
+                <div class="mt-8 pt-6 border-t">
+                    <div class="font-bold text-blue-700 mb-2 uppercase text-sm tracking-wide">Explanation</div>
+                    <p class="text-slate-700 leading-relaxed">${q.explanation || 'No explanation provided.'}</p>
+                </div>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+
+    document.getElementById('reviewScore').textContent = `${correctCount} / ${questions.length} correct`;
+    document.getElementById('reviewPercent').textContent = ((correctCount / questions.length) * 100).toFixed(1) + '%';
+}
+
+// Search
+document.getElementById('searchInput').addEventListener('input', function() {
+    const term = this.value.toLowerCase();
+    document.querySelectorAll('.course-box').forEach(box => {
+        box.style.display = box.dataset.course.toLowerCase().includes(term) ? 'block' : 'none';
+    });
+});
+
+// Start
+initDashboard();
+</script>
+</body>
+</html>
