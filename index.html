@@ -1,486 +1,1136 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemze Exam - Direct Access Portal</title>
+    <title>Gemze Exam - Finals Prep</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --text: #1e293b; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text); }
-        
-        .course-box { background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; cursor: pointer; transition: 0.3s; }
-        .course-box:hover { border-color: var(--primary); transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-        .exam-options { display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f1f5f9; max-height: 250px; overflow-y: auto; }
-        .exam-options button { background: #eff6ff; color: #1e40af; padding: 0.5rem 0.8rem; border-radius: 6px; margin: 3px; font-size: 0.75rem; font-weight: 800; border: 1px solid #dbeafe; }
-        .exam-options button:hover { background: var(--primary); color: white; }
+<style>
+    :root {
+        /* Core Backgrounds */
+        --bg: #0a0a0a;
+        /* Deep black */
+        --surface: #111111;
+        /* Very dark cards/panels */
+        --surface-hover: #1a1a1a;
+        /* Hover lift */
+        --border: #2a2a2a;
+        /* Subtle borders */
 
-        #quiz-layout { display: none; gap: 2rem; max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-        .quiz-content { flex: 3; background: white; padding: 2.5rem; border-radius: 1.5rem; border: 1px solid #e2e8f0; }
-        .sidebar { flex: 1; background: white; padding: 1.5rem; border-radius: 1rem; border: 1px solid #e2e8f0; height: fit-content; position: sticky; top: 20px; }
-        
-        .question-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-top: 1rem; max-height: 400px; overflow-y: auto; }
-        .question-tabs button { padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; font-weight: bold; font-size: 0.8rem; height: 40px; }
-        .question-tabs button.active { background: var(--primary); color: white; }
-        .question-tabs button.answered { background: #dcfce7; color: #166534; }
-        .question-tabs button.flagged { background: #fef9c3 !important; border: 2px solid #eab308 !important; }
+        /* Main Purple Theme */
+        --primary: #8b5cf6;
+        /* Violet-500 – main accent */
+        --primary-dark: #7c3aed;
+        /* Violet-600 – hover/active */
+        --primary-glow: rgba(139, 92, 246, 0.25);
+        /* Soft purple glow */
 
-        .progress { height: 100%; background: var(--primary); transition: width 0.3s; width: 0%; }
-        label { display: block; padding: 1.2rem; border: 2px solid #f1f5f9; border-radius: 1rem; margin-bottom: 0.75rem; cursor: pointer; }
-        label.selected { border-color: var(--primary); background: #eff6ff; }
-        #answerDisplay { display: none; margin-top: 1.5rem; padding: 1.5rem; background: #f0fdf4; border-left: 5px solid #22c55e; border-radius: 0.75rem; }
+        /* Feedback colors */
+        --correct: #a78bfa;
+        /* Violet-400 – success/correct */
+        --incorrect: #f87171;
+        /* Red-400 – errors (kept red for clarity) */
+        --flag: #c084fc;
+        /* Violet-300 – flagged items */
 
-        /* Custom confirmation modal */
-        #submitConfirmModal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.6);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
+        /* Text */
+        --text: #f3e8ff;
+        /* Light purple-white */
+        --text-muted: #c4b5fd;
+        /* Muted violet-gray */
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        line-height: 1.5;
+    }
+
+    header {
+        background: #0f001a;
+        /* Very dark purple-black */
+        border-bottom: 1px solid #3b0764;
+        /* Deep purple border */
+        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.12);
+    }
+
+    .tab-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+        color: var(--text);
+    }
+
+    .tab-btn.active {
+        background: rgba(139, 92, 246, 0.18);
+        color: var(--primary);
+        border-bottom: 3px solid var(--primary);
+    }
+
+    .course-box,
+    .exam-box {
+        background: var(--surface);
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    }
+
+    .course-box:hover,
+    .exam-box:hover {
+        border-color: var(--primary);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(139, 92, 246, 0.18);
+    }
+
+    .exam-options {
+        display: none;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+        max-height: 260px;
+        overflow-y: auto;
+    }
+
+    .exam-options button {
+        background: rgba(139, 92, 246, 0.12);
+        color: var(--primary);
+        padding: 0.5rem 0.8rem;
+        border-radius: 6px;
+        margin: 3px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        transition: all 0.2s;
+    }
+
+    .exam-options button:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    #quiz-layout {
+        display: none;
+        gap: 2rem;
+        max-width: 1200px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    .quiz-content {
+        flex: 3;
+        background: var(--surface);
+        padding: 2.5rem;
+        border-radius: 1.5rem;
+        border: 1px solid var(--border);
+        box-shadow: 0 8px 30px rgba(139, 92, 246, 0.15);
+    }
+
+    .sidebar {
+        flex: 1;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        height: fit-content;
+        position: sticky;
+        top: 20px;
+        background: rgba(30, 41, 59, 0.7) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(139, 92, 246, 0.2) !important;
+        box-shadow: 0 4px 20px rgba(139, 92, 246, 0.12);
+    }
+
+    .question-tabs {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.5rem;
+        margin-top: 1rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    #quiz-area {
+        font-size: 1.15rem;
+        line-height: 1.8;
+        color: var(--text);
+    }
+
+    .question-tabs button {
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+        font-weight: bold;
+        font-size: 0.8rem;
+        height: 40px;
+        background: var(--surface);
+        color: var(--text-muted);
+        transition: all 0.2s;
+    }
+
+    .question-tabs button:hover {
+        background: var(--surface-hover);
+        color: var(--text);
+    }
+
+    .question-tabs button.active {
+        background: var(--primary);
+        color: white;
+    }
+
+    .question-tabs button.answered {
+        background: #5b21b6;
+        /* violet-800 */
+        color: #e9d5ff;
+    }
+
+    .question-tabs button.flagged {
+        background: #6d28d9 !important;
+        /* violet-700 */
+        border: 2px solid var(--flag) !important;
+        color: white;
+    }
+
+    .progress {
+        box-shadow: 0 0 15px var(--primary-glow);
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        background: var(--primary);
+        transition: width 0.3s;
+        width: 0%;
+    }
+
+    .progress::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+        animation: shine 2s infinite;
+    }
+
+    label {
+        display: block;
+        padding: 1.2rem;
+        border: 2px solid var(--border);
+        border-radius: 1rem;
+        margin-bottom: 0.75rem;
+        cursor: pointer;
+        background: var(--surface);
+        transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s, border-color 0.2s;
+    }
+
+    label:hover {
+        transform: translateX(8px);
+        background: var(--surface-hover);
+    }
+
+    label.selected {
+        border-color: var(--primary);
+        background: rgba(139, 92, 246, 0.12);
+    }
+
+    #answerDisplay {
+        display: none;
+        margin-top: 1.5rem;
+        padding: 1.5rem;
+        background: rgba(139, 92, 246, 0.15);
+        border-left: 5px solid var(--correct);
+        border-radius: 0.75rem;
+        color: var(--text);
+    }
+
+    .copy-btn {
+        background: rgba(139, 92, 246, 0.15);
+        color: var(--primary);
+        border: 1px solid var(--primary);
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    /* Buttons – unified purple */
+    #nextBtn,
+    #submitBtn,
+    button.bg-[#60a5fa],
+    button.bg-[#1e40af],
+    button.bg-[#10b981],
+    button.bg-[#059669] {
+        background: var(--primary) !important;
+        color: white !important;
+    }
+
+    #nextBtn:hover,
+    #submitBtn:hover,
+    button.bg-[#60a5fa]:hover,
+    button.bg-[#1e40af]:hover,
+    button.bg-[#10b981]:hover,
+    button.bg-[#059669]:hover {
+        background: var(--primary-dark) !important;
+    }
+
+    /* Modal */
+    #submitConfirmModal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    #submitConfirmModal .modal-content {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        padding: 2rem 1.5rem;
+        max-width: 420px;
+        width: 100%;
+        box-shadow: 0 20px 50px rgba(139, 92, 246, 0.25);
+        text-align: center;
+        position: relative;
+    }
+
+    #confirmSubmitBtn {
+        background: #c026d3;
+        /* Strong purple-red */
+        color: white;
+        border: none;
+    }
+
+    #confirmSubmitBtn:hover {
+        background: #a21caf;
+    }
+
+    #cancelSubmitBtn {
+        background: transparent;
+        border: 2px solid var(--border);
+        color: var(--text);
+    }
+
+    #cancelSubmitBtn:hover {
+        background: #2e1065;
+        /* violet-950 */
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1.5rem;
+        font-size: 2rem;
+        color: var(--text-muted);
+        cursor: pointer;
+    }
+
+    .modal-close:hover {
+        color: white;
+    }
+
+    /* Media Queries & Animations (unchanged except colors if needed) */
+    @media (max-width: 768px) {
+        #quiz-layout {
+            flex-direction: column;
+            margin: 1rem auto;
+            gap: 1rem;
         }
-        #submitConfirmModal .modal-content {
-            background: white;
+
+        .quiz-content {
+            padding: 1.5rem;
             border-radius: 1rem;
-            padding: 2rem;
-            max-width: 420px;
-            width: 90%;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
         }
 
-        @media (max-width: 768px) {
-            #quiz-layout { flex-direction: column; margin: 1rem auto; gap: 1rem; }
-            .quiz-content { padding: 1.5rem; border-radius: 1rem; }
-            .sidebar { position: static; order: 2; margin-bottom: 2rem; }
-            .question-tabs { grid-template-columns: repeat(6, 1fr); }
-            button { min-height: 48px; }
+        .sidebar {
+            position: static;
+            order: 2;
+            margin-bottom: 2rem;
         }
-    </style>
+
+        .question-tabs {
+            grid-template-columns: repeat(6, 1fr);
+        }
+
+        button {
+            min-height: 48px;
+        }
+    }
+
+    @keyframes shine {
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    @keyframes trafficLight {
+
+        0%,
+        33.32% {
+            color: var(--correct);
+        }
+
+        33.33%,
+        66.65% {
+            color: #c084fc;
+        }
+
+        66.66%,
+        100% {
+            color: var(--incorrect);
+        }
+    }
+
+    .animate-traffic {
+        animation: trafficLight 1800s infinite;
+    }
+</style>
 </head>
+
 <body>
 
-<header class="bg-white border-b py-4 px-6 shadow-sm sticky top-0 z-50">
-    <nav class="max-w-6xl mx-auto flex justify-between items-center">
-        <div class="text-2xl font-black text-blue-600">GEMZE <span class="text-slate-800">EXAM</span></div>
-        <div class="text-slate-400 text-xs font-bold uppercase tracking-widest">Local Database Mode</div>
-    </nav>
-</header>
-
-<div id="dashboard-view">
-    <section class="max-w-6xl mx-auto mt-10 px-6">
-        <div class="bg-white p-4 rounded-2xl border shadow-sm flex items-center gap-3 max-w-2xl mx-auto">
-            <input type="search" id="searchInput" placeholder="Search for a module..." class="w-full outline-none text-slate-700 font-medium">
+    <header class="bg-[#0f172a] border-b border-[#334155] py-4 px-6 shadow-sm sticky top-0 z-50">
+        <nav class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="text-2xl font-black">
+            <span class="">GEMZE</span>
+            <span class="text-[#e2e8f0]">EXAM</span>
         </div>
-    </section>
-    <main class="max-w-6xl mx-auto p-6 mt-4">
-        <div id="courseContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <div class="flex gap-3">
+                <button data-tab="dashboard" class="tab-btn active px-4 py-2 rounded-lg font-medium">Dashboard</button>
+                <button data-tab="progress" class="tab-btn px-4 py-2 rounded-lg font-medium">Progress</button>
+                <button data-tab="review-mode" class="tab-btn px-4 py-2 rounded-lg font-medium">Review Mode</button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Dashboard (Exams) -->
+    <div id="dashboard-view" class="tab-content max-w-6xl mx-auto mt-10 px-6">
+        <div
+            class="bg-[#1e293b] p-4 rounded-2xl border border-[#334155] shadow-sm flex items-center gap-3 max-w-2xl mx-auto">
+            <input type="search" id="searchInput" placeholder="Search for a module..." class="w-full outline-none text-[#e2e8f0] bg-transparent">
+        </div>
+        <main class="p-6 mt-4">
+            <div id="courseContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </main>
+    </div>
+
+    <!-- Course Landing Page -->
+    <div id="course-landing-view" class="tab-content hidden max-w-6xl mx-auto mt-10 px-6">
+        <button onclick="switchTab('dashboard')" class="mb-6 text-[#60a5fa] font-bold hover:text-[#93c5fd]">← Back to Dashboard</button>
+        <h1 id="course-title" class="text-3xl font-black text-[#e2e8f0] mb-2"></h1>
+        <p id="course-stats" class="text-[#94a3b8] mb-8"></p>
+
+        <div
+            class="bg-[#1e293b] p-6 rounded-2xl border border-[#334155] shadow-sm mb-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <button onclick="startBlitzMode(currentCourse)" class="bg-[#10b981] text-white py-4 rounded-xl font-bold hover:bg-[#059669] transition">
+            Blitz Mode (Whole Course)
+        </button>
+            <button onclick="switchToFocusedMode()" class="bg-[#60a5fa] text-white py-4 rounded-xl font-bold hover:bg-[#3b82f6] transition">
+            Focused Mode (Individual Exams)
+        </button>
+            <button onclick="startMissedQuestions(currentCourse)" class="bg-[#ef4444] text-white py-4 rounded-xl font-bold hover:bg-[#dc2626] transition">
+            Challenge My Mistakes
+        </button>
+        </div>
+
+        <div id="focused-mode-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
+    </div>
+
+    <!-- Progress Tab -->
+    <div id="progress-view" class="tab-content hidden max-w-6xl mx-auto mt-10 px-6">
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-3xl font-black text-[#e2e8f0]">Study Progress</h2>
+            <button onclick="clearProgress()" class="bg-[#ef4444] text-white px-5 py-2.5 rounded-lg font-medium hover:bg-[#dc2626]">
+            Clear All Progress
+        </button>
+        </div>
+        <div id="progress-courses" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+
+    <!-- Review Mode Tab -->
+    <div id="review-mode-view" class="tab-content hidden max-w-6xl mx-auto mt-10 px-6">
+        <h2 class="text-3xl font-black text-[#e2e8f0] mb-8">Rapid Review Mode</h2>
+        <div id="review-mode-courses" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </div>
+
+    <!-- Quiz Layout -->
+    <main id="quiz-layout" class="hidden">
+        <div class="quiz-content">
+            <div class="flex justify-between items-center mb-6">
+                <button onclick="switchTab('dashboard')" class="text-[#94a3b8] font-bold hover:text-[#60a5fa]">✕ Exit</button>
+                <div class="flex items-center gap-6">
+                    <div
+                        class="bg-[#1e293b] text-[#60a5fa] px-5 py-1.5 rounded-full font-black text-sm border border-[#334155]">
+                        ⏱ <span id="timer">00:00</span>
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="reviewModeToggle" class="w-5 h-5">
+                    <span class="text-sm font-medium text-[#e2e8f0]">Rapid Review Mode</span>
+                </label>
+                </div>
+            </div>
+            <h1 id="activeExamTitle" class="text-2xl font-black text-[#e2e8f0]">Module</h1>
+            <p class="text-sm text-[#94a3b8] font-bold mb-4 uppercase">Question <span id="currentQuestionNum">1</span> /
+                <span id="totalQs">0</span>
+            </p>
+            <div class="w-full h-2 bg-[#334155] rounded-full mb-8">
+                <div class="progress rounded-full"></div>
+            </div>
+            <div id="quiz-area"></div>
+            <div id="answerDisplay"></div>
+            <div class="grid grid-cols-2 gap-4 mt-10">
+                <button id="prevBtn" class="bg-[#334155] text-[#e2e8f0] py-4 rounded-2xl font-bold hover:bg-[#475569]">← Previous</button>
+                <button id="nextBtn" class="bg-[#60a5fa] text-[#0f172a] py-4 rounded-2xl font-bold hover:bg-[#3b82f6]">Next Question →</button>
+            </div>
+            <div class="flex gap-4 mt-4">
+                <button id="flagBtn" class="flex-1 border-2 border-[#ca8a04] py-3 rounded-2xl font-bold text-[#fbbf24]">Flag</button>
+                <button id="showAnswerBtn" class="flex-1 border-2 border-[#334155] py-3 rounded-2xl font-bold text-[#cbd5e1]">Show Answer</button>
+            </div>
+            <button id="submitBtn" class="w-full mt-8 bg-[#1e40af] text-white py-4 rounded-2xl font-black uppercase hover:bg-[#1e3a8a]">Submit Exam</button>
+        </div>
+        <div class="sidebar">
+            <h2 class="font-black text-[#e2e8f0] border-b border-[#334155] pb-3 mb-4">Question Map</h2>
+            <div id="questionTabs" class="question-tabs"></div>
+        </div>
     </main>
-</div>
 
-<main id="quiz-layout">
-    <div class="quiz-content">
-        <div class="flex justify-between items-center mb-6">
-            <button onclick="location.reload()" class="text-slate-400 font-bold hover:text-red-500">✕ Exit</button>
-            <div class="bg-blue-50 text-blue-700 px-5 py-1.5 rounded-full font-black text-sm">⏱ <span id="timer">30:00</span></div>
-        </div>
-        <h1 id="activeExamTitle" class="text-2xl font-black text-slate-800">Module</h1>
-        <p class="text-sm text-slate-400 font-bold mb-4 uppercase">Question <span id="currentQuestionNum">1</span> / <span id="totalQs">0</span></p>
-        <div class="w-full h-2 bg-slate-100 rounded-full mb-8"><div class="progress rounded-full"></div></div>
-        <div id="quiz-area"></div>
-        <div id="answerDisplay"></div>
-        <div class="grid grid-cols-2 gap-4 mt-10">
-            <button id="prevBtn" class="bg-slate-100 py-4 rounded-2xl font-bold">← Previous</button>
-            <button id="nextBtn" class="bg-blue-600 text-white py-4 rounded-2xl font-bold">Next Question →</button>
-        </div>
-        <div class="flex gap-4 mt-4">
-            <button id="flagBtn" class="flex-1 border-2 py-3 rounded-2xl font-bold">Flag</button>
-            <button id="showAnswerBtn" class="flex-1 border-2 py-3 rounded-2xl font-bold">Show Answer</button>
-        </div>
-        <button id="submitBtn" class="w-full mt-8 bg-slate-900 text-white py-4 rounded-2xl font-black uppercase">Submit Exam</button>
-    </div>
-    <div class="sidebar">
-        <h2 class="font-black text-slate-800 border-b pb-3 mb-4">Map</h2>
-        <div id="questionTabs" class="question-tabs"></div>
-    </div>
-</main>
+    <!-- Results View -->
+    <div id="results-view" class="hidden max-w-2xl mx-auto py-20 px-6 text-center">
+        <div class="bg-[#1e293b] p-12 rounded-3xl shadow-2xl border border-[#334155]">
+            <h2 class="text-2xl font-black text-[#e2e8f0] mb-2">Your Results</h2>
+            <div id="finalScore" class="text-8xl font-black text-[#60a5fa] my-8">0%</div>
+            <p id="scoreStats" class="text-lg text-[#94a3b8] font-bold mb-10"></p>
 
-<!-- Results View -->
-<div id="results-view" class="hidden max-w-2xl mx-auto py-20 px-6 text-center">
-    <div class="bg-white p-12 rounded-3xl shadow-2xl border">
-        <h2 class="text-2xl font-black mb-2">Your Results</h2>
-        <div id="finalScore" class="text-8xl font-black text-blue-600 my-8">0%</div>
-        <p id="scoreStats" class="text-lg text-slate-500 font-bold mb-10"></p>
-        
-        <button onclick="enterReviewMode()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black uppercase mb-4 transition">
+            <button onclick="enterReviewMode()" class="w-full bg-[#10b981] hover:bg-[#059669] text-white py-5 rounded-2xl font-black uppercase mb-4 transition">
             Review Answers
         </button>
-        <button onclick="location.reload()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black uppercase transition">
+            <button onclick="switchTab('dashboard')" class="w-full bg-[#1e40af] hover:bg-[#1e3a8a] text-white py-5 rounded-2xl font-black uppercase transition">
             Back to Dashboard
         </button>
-    </div>
-</div>
-
-<!-- Review View -->
-<div id="review-view" class="hidden max-w-4xl mx-auto py-10 px-4 sm:px-6">
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-        <div>
-            <h2 class="text-3xl font-black text-slate-800">Review Your Answers</h2>
-            <p class="text-slate-500 mt-1">
-                <span id="reviewScore"></span> • <span id="reviewPercent"></span>
-            </p>
         </div>
-        <div class="flex gap-3">
-            <button onclick="document.getElementById('review-view').classList.add('hidden'); document.getElementById('results-view').classList.remove('hidden');"
-                class="px-6 py-2.5 bg-slate-700 text-white rounded-xl font-bold hover:bg-slate-800 transition">
+    </div>
+
+    <!-- Review View -->
+    <div id="review-view" class="hidden max-w-4xl mx-auto py-10 px-4 sm:px-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <div>
+                <h2 class="text-3xl font-black text-[#e2e8f0]">Review Your Answers</h2>
+                <p class="text-[#94a3b8] mt-1">
+                    <span id="reviewScore"></span> • <span id="reviewPercent"></span>
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('review-view').classList.add('hidden'); document.getElementById('results-view').classList.remove('hidden');"
+                class="px-6 py-2.5 bg-[#334155] text-white rounded-xl font-bold hover:bg-[#475569] transition">
                 Back to Results
             </button>
-            <button onclick="location.reload()"
-                class="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition">
+                <button onclick="switchTab('dashboard')"
+                class="px-6 py-2.5 bg-[#1e40af] text-white rounded-xl font-bold hover:bg-[#1e3a8a] transition">
                 Exit
             </button>
-        </div>
-    </div>
-    <div id="reviewContainer" class="space-y-8"></div>
-</div>
-
-<!-- Submit Confirmation Modal -->
-<div id="submitConfirmModal">
-    <div class="modal-content text-center">
-        <div class="w-16 h-16 mx-auto mb-6 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-        </div>
-        <h3 class="text-2xl font-bold text-slate-800 mb-3">Submit Exam?</h3>
-        <p id="submitConfirmMessage" class="text-slate-600 mb-8 text-lg"></p>
-        <div class="grid grid-cols-2 gap-4">
-            <button id="cancelSubmitBtn" class="py-4 border-2 border-slate-300 rounded-xl font-bold text-slate-700 hover:bg-slate-50 transition">
-                Cancel
-            </button>
-            <button id="confirmSubmitBtn" class="py-4 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition">
-                Submit Anyway
-            </button>
-        </div>
-    </div>
-</div>
-
-<script>
-const examStructure = {
-            "Advanced Drawing (ADA)": ["admin/exams/ADA001.json", "admin/exams/ADA002.json", "admin/exams/ADA003.json", "admin/exams/ADA004.json", "admin/exams/ADA005.json", "admin/exams/ADA006.json"],
-            "Advanced Drawing, NDT SRM": ["admin/exams/ADV001.json", "admin/exams/ADV002.json", "admin/exams/ADV003.json"],
-            "AE1": ["admin/exams/AE1.json", "admin/exams/ex3.json", "admin/exams/electricity_exam.json", "admin/exams/AIgenerated (1).json", "admin/exams/av1.json", "admin/exams/av2.json", "admin/exams/av3.json", "admin/exams/av4.json", "admin/exams/techersrev.json", "admin/exams/techersrev1.json"],
-            "AE2": ["admin/exams/AEX001.json", "admin/exams/AEX002.json", "admin/exams/AEX003.json", "admin/exams/AEX004.json", "admin/exams/AEX005.json", "admin/exams/AEX006.json", "admin/exams/AEX007.json", "admin/exams/AEX008.json"],
-            "Aerodynamics": ["admin/exams/a.json", "admin/exams/b.json", "admin/exams/c.json", "admin/exams/d.json", "admin/exams/e.json", "admin/exams/f.json", "admin/exams/g.json", "admin/exams/h.json", "admin/exams/i.json", "admin/exams/k.json"],
-            "Af01": ["admin/exams/AFX001.json", "admin/exams/AFX002.json", "admin/exams/AFX003.json", "admin/exams/AFX005.json", "admin/exams/AFX006.json", "admin/exams/AFX016.json"],
-            "Af02": ["admin/exams/AFX008.json", "admin/exams/AFX011.json", "admin/exams/AFX012.json", "admin/exams/AFX013.json", "admin/exams/AFX014.json", "admin/exams/AFX015.json", "admin/exams/AFX018.json", "admin/exams/AFX019.json"],
-            "AF02Wood": ["admin/exams/AFW001.json", "admin/exams/AFW002.json", "admin/exams/AFW003.json", "admin/exams/AFW004.json", "admin/exams/AFW005.json", "admin/exams/AFW006.json", "admin/exams/AFW007.json", "admin/exams/AFW008.json", "admin/exams/AFW009.json"],
-            "AF03M1": ["admin/exams/AFM012.json", "admin/exams/AFM013.json", "admin/exams/AFM014.json", "admin/exams/AFM015.json", "admin/exams/AFM016.json", "admin/exams/AFM017.json", "admin/exams/AFM018.json", "admin/exams/AFM019.json", "admin/exams/AFM020.json", "admin/exams/AFM021.json"],
-            "Af04": ["admin/exams/AFX020.json", "admin/exams/AFX021.json", "admin/exams/AFX022.json", "admin/exams/AFX023.json", "admin/exams/AFX024.json", "admin/exams/AFX025.json", "admin/exams/AFX026.json", "admin/exams/AFX027.json"],
-            "Af05": ["admin/exams/AFX029.json", "admin/exams/AFX030.json", "admin/exams/AFX031.json", "admin/exams/AFX032.json", "admin/exams/AFX033.json", "admin/exams/AFX034.json", "admin/exams/AFX035.json", "admin/exams/AFX036.json"],
-            "Af06": ["admin/exams/AFX037.json", "admin/exams/AFX038.json", "admin/exams/AFX039.json", "admin/exams/AFX040.json", "admin/exams/AFX041.json", "admin/exams/AFX042.json", "admin/exams/AFX043.json"],
-            "AF07": ["admin/exams/AFX044.json", "admin/exams/AFX045.json", "admin/exams/AFX046.json", "admin/exams/AFX047.json", "admin/exams/AFX048.json", "admin/exams/AFX049.json", "admin/exams/AFX050.json", "admin/exams/AFX051.json", "admin/exams/AFX052.json", "admin/exams/AFX053.json"],
-            "AF08": ["admin/exams/AFX054.json", "admin/exams/AFX055.json", "admin/exams/AFX056.json", "admin/exams/AFX057.json", "admin/exams/AFX058.json", "admin/exams/AFX059.json", "admin/exams/AFX060.json", "admin/exams/AFX061.json"],
-            "AF08 FROM STRUC": ["admin/exams/AFF004.json", "admin/exams/AFF005.json", "admin/exams/AFF006.json", "admin/exams/AFF007.json", "admin/exams/AFF008.json"],
-            "Af1m3": ["admin/exams/AFM001.json", "admin/exams/AFM002.json", "admin/exams/AFM003.json", "admin/exams/AFM005.json", "admin/exams/AFM006.json", "admin/exams/AFM007.json", "admin/exams/AFM008.json", "admin/exams/AFM009.json", "admin/exams/AFM010.json", "admin/exams/AFM011.json"],
-            "Aircraft electrical System": ["admin/exams/AIR004.json", "admin/exams/AIR006.json", "admin/exams/AIR007.json"],
-            "Aircraft Navigation Communication": ["admin/exams/AIR008.json", "admin/exams/AIR009.json", "admin/exams/AIR010.json", "admin/exams/AIR011.json", "admin/exams/AIR012.json", "admin/exams/AIR015.json", "admin/exams/AIR016.json", "admin/exams/AIR017.json", "admin/exams/AIR013.json", "admin/exams/AIR014.json"],
-            "Air Ele": ["admin/exams/AIR001.json", "admin/exams/AIR002.json", "admin/exams/AIR003.json"],
-            "Composite": ["admin/exams/COM001.json", "admin/exams/COM002.json", "admin/exams/COM003.json"],
-            "General Structure": ["admin/exams/GEN001.json", "admin/exams/GEN002.json"],
-            "Hardware": ["admin/exams/HAR001.json", "admin/exams/HAR002.json"],
-            "INS / INSA": ["admin/exams/INS001.json", "admin/exams/INS002.json", "admin/exams/INS003.json", "admin/exams/INS004.json", "admin/exams/INS005.json", "admin/exams/INS006.json"],
-            "NINS": ["admin/exams/NIN001.json", "admin/exams/NIN002.json", "admin/exams/NIN003.json", "admin/exams/NIN004.json", "admin/exams/NIN005.json", "admin/exams/NIN006.json", "admin/exams/NIN007.json", "admin/exams/NIN008.json", "admin/exams/NIN009.json"],
-            "Physics": ["admin/exams/phy.json", "admin/exams/phy1.json"],
-            "Powerplant": ["admin/exams/ppq5.json", "admin/exams/rev.json", "admin/exams/gt.json", "admin/exams/ppq11.json", "admin/exams/ber1.json"],
-            "Sheet Metal": ["admin/exams/SHE001.json", "admin/exams/SHE002.json", "admin/exams/SHE003.json"],
-            "TD": ["admin/exams/td.json", "admin/exams/td3.json", "admin/exams/td4.json"],
-            "Welding": ["admin/exams/WEL001.json", "admin/exams/WEL002.json", "admin/exams/WEL003.json", "admin/exams/WEL004.json", "admin/exams/WEL005.json", "admin/exams/WEL006.json", "admin/exams/WEL007.json", "admin/exams/WEL008.json"]
-        };
-
-const examCodeMap = {
-    "AE1": ["AE_011", "AE_012", "AE_013", "AE_014", "AE_015", "AE_016", "AE_017", "AE_018", "AE_019", "AE_020"],
-    "Aerodynamics": ["AER001", "AER002", "AER003", "AER004", "AER005", "AER006", "AER007", "AER008", "AER009", "AER010"],
-    "Powerplant": ["PP_001", "PP_002", "PP_004", "PP_005", "PP_006"]
-};
-
-let questions = [];
-let currentIdx = 0;
-let userAnswers = [];
-let flagged = [];
-let answerShown = [];
-let timerInt;
-
-function initDashboard() {
-    const container = document.getElementById('courseContainer');
-    container.innerHTML = '';
-    Object.keys(examStructure).forEach(course => {
-        const box = document.createElement('div');
-        box.className = 'course-box';
-        box.dataset.course = course;
-        box.innerHTML = `
-            <h3 class="text-lg font-black text-slate-800">${course}</h3>
-            <div class="exam-options">
-                ${examStructure[course].map((path, i) => {
-                    const fileName = path.split('/').pop().replace('.json', '');
-                    let label = fileName;
-                    if (examCodeMap[course]) label = examCodeMap[course][i] || fileName;
-                    return `<button onclick="loadExamDirect('${path}', '${label}')">${label}</button>`;
-                }).join('')}
             </div>
-        `;
-        box.onclick = function(e) {
-            if(e.target.tagName !== 'BUTTON') {
-                const opts = this.querySelector('.exam-options');
-                const isVisible = opts.style.display === 'block';
-                document.querySelectorAll('.exam-options').forEach(o => o.style.display = 'none');
-                opts.style.display = isVisible ? 'none' : 'block';
-            }
-        };
-        container.appendChild(box);
-    });
-}
+        </div>
+        <div id="reviewContainer" class="space-y-8"></div>
+    </div>
 
-async function loadExamDirect(filePath, label) {
-    try {
-        const response = await fetch(filePath);
-        if (!response.ok) throw new Error("File not found");
-        const data = await response.json();
-        questions = Array.isArray(data) ? data : (data.questions || []);
-        startExam(label);
-    } catch (err) {
-        alert(`Error loading exam:\n${filePath}\n\nMake sure you're using a local server (Live Server / http-server etc.)`);
-    }
-}
+    <!-- Submit Confirmation Modal -->
+    <div id="submitConfirmModal">
+        <div class="modal-content text-center">
+            <div
+                class="w-16 h-16 mx-auto mb-6 bg-[#854d0e] text-[#fbbf24] rounded-full flex items-center justify-center">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-[#e2e8f0] mb-3">Submit Exam?</h3>
+            <p id="submitConfirmMessage" class="text-[#94a3b8] mb-8 text-lg"></p>
+            <div class="grid grid-cols-2 gap-4">
+                <button id="cancelSubmitBtn" class="py-4 border-2 border-[#334155] rounded-xl font-bold text-[#e2e8f0] hover:bg-[#334155]">Cancel</button>
+                <button id="confirmSubmitBtn" class="py-4 bg-[#ef4444] text-white rounded-xl font-bold hover:bg-[#dc2626]">Submit Anyway</button>
+            </div>
+        </div>
+    </div>
 
-function startExam(title) {
-    document.getElementById('dashboard-view').classList.add('hidden');
-    document.getElementById('quiz-layout').style.display = 'flex';
-    document.getElementById('activeExamTitle').textContent = title.toUpperCase();
-    currentIdx = 0;
-    userAnswers = Array(questions.length).fill(null);
-    flagged = Array(questions.length).fill(false);
-    answerShown = Array(questions.length).fill(false);
-    document.getElementById('totalQs').textContent = questions.length;
-    renderQuestion();
-    startTimer(30 * 60);
-}
+    <script>
+        const examStructure = {
+        "Advanced Drawing (ADA)": ["/admin/exams/ADA001.json","/admin/exams/ADA002.json","/admin/exams/ADA003.json","/admin/exams/ADA004.json","/admin/exams/ADA005.json","/admin/exams/ADA006.json"],
+        "Advanced Drawing, NDT SRM": ["/admin/exams/ADV001.json","/admin/exams/ADV002.json","/admin/exams/ADV003.json"],
+        "Electricity": ["/admin/exams/AE1.json","/admin/exams/ex3.json","/admin/exams/electricity_exam.json","/admin/exams/AIgenerated (1).json","/admin/exams/av1.json","/admin/exams/av2.json","/admin/exams/av3.json","/admin/exams/av4.json","/admin/exams/techersrev.json","/admin/exams/techersrev1.json"],
+        "Electronics": ["/admin/exams/AEX001.json","/admin/exams/AEX002.json","/admin/exams/AEX003.json","/admin/exams/AEX004.json","/admin/exams/AEX005.json","/admin/exams/AEX006.json","/admin/exams/AEX007.json","/admin/exams/AEX008.json"],
+        "Aerodynamics": ["/admin/exams/a.json","/admin/exams/b.json","/admin/exams/c.json","/admin/exams/d.json","/admin/exams/e.json","/admin/exams/f.json","/admin/exams/g.json","/admin/exams/h.json","/admin/exams/i.json","/admin/exams/k.json"],
+        "Af01": ["/admin/exams/AFX001.json","/admin/exams/AFX002.json","/admin/exams/AFX003.json","/admin/exams/AFX005.json","/admin/exams/AFX006.json","/admin/exams/AFX016.json"],
+        "Af02": ["/admin/exams/AFX008.json","/admin/exams/AFX011.json","/admin/exams/AFX012.json","/admin/exams/AFX013.json","/admin/exams/AFX014.json","/admin/exams/AFX015.json","/admin/exams/AFX018.json","/admin/exams/AFX019.json"],
+        "AF02Wood": ["/admin/exams/AFW001.json","/admin/exams/AFW002.json","/admin/exams/AFW003.json","/admin/exams/AFW004.json","/admin/exams/AFW005.json","/admin/exams/AFW006.json","/admin/exams/AFW007.json","/admin/exams/AFW008.json","/admin/exams/AFW009.json"],
+        "AF03 Pneumatic & Hydro": ["/admin/exams/AFM012.json","/admin/exams/AFM013.json","/admin/exams/AFM014.json","/admin/exams/AFM015.json","/admin/exams/AFM016.json","/admin/exams/AFM017.json","/admin/exams/AFM018.json","/admin/exams/AFM019.json","/admin/exams/AFM020.json","/admin/exams/AFM021.json"],
+        "Af04 Landing Gear": ["/admin/exams/AFX020.json","/admin/exams/AFX021.json","/admin/exams/AFX022.json","/admin/exams/AFX023.json","/admin/exams/AFX024.json","/admin/exams/AFX025.json","/admin/exams/AFX026.json","/admin/exams/AFX027.json"],
+        "Af05 fuel": ["/admin/exams/AFX029.json","/admin/exams/AFX030.json","/admin/exams/AFX031.json","/admin/exams/AFX032.json","/admin/exams/AFX033.json","/admin/exams/AFX034.json","/admin/exams/AFX035.json","/admin/exams/AFX036.json"],
+        "Af06 Cabine": ["/admin/exams/AFX037.json","/admin/exams/AFX038.json","/admin/exams/AFX039.json","/admin/exams/AFX040.json","/admin/exams/AFX041.json","/admin/exams/AFX042.json","/admin/exams/AFX043.json"],
+        "AF07 Auxilary": ["/admin/exams/AFX044.json","/admin/exams/AFX045.json","/admin/exams/AFX046.json","/admin/exams/AFX047.json","/admin/exams/AFX048.json","/admin/exams/AFX049.json","/admin/exams/AFX050.json","/admin/exams/AFX051.json","/admin/exams/AFX052.json","/admin/exams/AFX053.json"],
+        "AF08 Inspection": ["/admin/exams/AFX054.json","/admin/exams/AFX055.json","/admin/exams/AFX056.json","/admin/exams/AFX057.json","/admin/exams/AFX058.json","/admin/exams/AFX059.json","/admin/exams/AFX060.json","/admin/exams/AFX061.json"],
+        "AF08 FROM STRUC": ["/admin/exams/AFF004.json","/admin/exams/AFF005.json","/admin/exams/AFF006.json","/admin/exams/AFF007.json","/admin/exams/AFF008.json"],
+        "Af1m3": ["/admin/exams/AFM001.json","/admin/exams/AFM002.json","/admin/exams/AFM003.json","/admin/exams/AFM005.json","/admin/exams/AFM006.json","/admin/exams/AFM007.json","/admin/exams/AFM008.json","/admin/exams/AFM009.json","/admin/exams/AFM010.json","/admin/exams/AFM011.json"],
+        "Avio electrical System": ["/admin/exams/AIR004.json","/admin/exams/AIR006.json","/admin/exams/AIR007.json"],
+        "Avio Navigation Communication": ["/admin/exams/AIR008.json","/admin/exams/AIR009.json","/admin/exams/AIR010.json","/admin/exams/AIR011.json","/admin/exams/AIR012.json","/admin/exams/AIR015.json","/admin/exams/AIR016.json","/admin/exams/AIR017.json","/admin/exams/AIR013.json","/admin/exams/AIR014.json"],
+        "Air Ele": ["/admin/exams/AIR001.json","/admin/exams/AIR002.json","/admin/exams/AIR003.json"],
+        "Composite": ["/admin/exams/COM001.json","/admin/exams/COM002.json","/admin/exams/COM003.json"],
+        "General Structure": ["/admin/exams/GEN001.json","/admin/exams/GEN002.json"],
+        "Hardware": ["/admin/exams/HAR001.json","/admin/exams/HAR002.json"],
+        " Avio INS / INSA": ["/admin/exams/INS001.json","/admin/exams/INS002.json","/admin/exams/INS003.json","/admin/exams/INS004.json","/admin/exams/INS005.json","/admin/exams/INS006.json"],
+        "Avio NINS": ["/admin/exams/NIN001.json","/admin/exams/NIN002.json","/admin/exams/NIN003.json","/admin/exams/NIN004.json","/admin/exams/NIN005.json","/admin/exams/NIN006.json","/admin/exams/NIN007.json","/admin/exams/NIN008.json","/admin/exams/NIN009.json"],
+        "Physics": ["/admin/exams/phy.json","/admin/exams/phy1.json"],
+        "Powerplant": ["/admin/exams/ppq5.json","/admin/exams/rev.json","/admin/exams/gt.json","/admin/exams/ppq11.json","/admin/exams/ber1.json"],
+        "Sheet Metal": ["/admin/exams/SHE001.json","/admin/exams/SHE002.json","/admin/exams/SHE003.json"],
+        "TD": ["/admin/exams/td.json","/admin/exams/td3.json","/admin/exams/td4.json"],
+        "Welding": ["/admin/exams/WEL001.json","/admin/exams/WEL002.json","/admin/exams/WEL003.json","/admin/exams/WEL004.json","/admin/exams/WEL005.json","/admin/exams/WEL006.json","/admin/exams/WEL007.json","/admin/exams/WEL008.json"]
+    };
 
-function renderQuestion() {
-    const q = questions[currentIdx];
-    const area = document.getElementById('quiz-area');
-    
-    let html = `<p class="text-xl font-bold text-slate-800 mb-8 leading-relaxed">${q.question_number || (currentIdx + 1)}. ${q.question}</p>`;
-    
-    for (let key in q.options) {
-        const isSelected = userAnswers[currentIdx] === key;
-        html += `
-            <label class="${isSelected ? 'selected' : ''}">
-                <input type="radio" name="opt" value="${key}" ${isSelected ? 'checked' : ''} onchange="saveAns('${key}')" class="hidden">
-                <span class="inline-block w-8 font-black text-blue-600">${key.toUpperCase()}</span> ${q.options[key]}
-            </label>
-        `;
-    }
-    area.innerHTML = html;
+    const examCodeMap = {
+        "Electrical": ["AE_011", "AE_012", "AE_013", "AE_014", "AE_015", "AE_016", "AE_017", "AE_018", "AE_019", "AE_020"],
+        "Aerodynamics": ["AER001", "AER002", "AER003", "AER004", "AER005", "AER006", "AER007", "AER008", "AER009", "AER010"],
+        "Powerplant": ["PP_001", "PP_002", "PP_004", "PP_005", "PP_006"]
+    };
 
-    const ansDisplay = document.getElementById('answerDisplay');
-    if (answerShown[currentIdx]) {
-        ansDisplay.style.display = 'block';
-        ansDisplay.innerHTML = `
-            <div class="font-black text-green-700">Correct: ${q.correct_answer?.toUpperCase() || '?'}</div>
-            <div class="text-slate-600 text-sm mt-2">${q.explanation || 'No explanation available'}</div>
-        `;
-    } else {
-        ansDisplay.style.display = 'none';
-    }
+    let progress = JSON.parse(localStorage.getItem('gemzeExamProgress')) || {};
+    let currentCourse = null;
+    let currentExamLabel = "";
+    let questions = [];
+    let currentIdx = 0;
+    let userAnswers = [];
+    let flagged = [];
+    let answerShown = [];
+    let timerInt;
+    let reviewMode = false;
+    let startTime; // for counting up elapsed time
 
-    document.getElementById('currentQuestionNum').textContent = currentIdx + 1;
-    document.getElementById('flagBtn').textContent = flagged[currentIdx] ? '🚩 Unflag' : 'Flag';
-    updateTabs();
-}
+    const TABS = {
+        dashboard: document.getElementById('dashboard-view'),
+        'course-landing': document.getElementById('course-landing-view'),
+        progress: document.getElementById('progress-view'),
+        'review-mode': document.getElementById('review-mode-view')
+    };
 
-function saveAns(val) {
-    userAnswers[currentIdx] = val;
-    updateTabs();
-    renderQuestion(); // refresh to show selected style
-}
-
-function updateTabs() {
-    const tabs = document.getElementById('questionTabs');
-    tabs.innerHTML = '';
-    questions.forEach((_, i) => {
-        const btn = document.createElement('button');
-        btn.textContent = i + 1;
-        if (i === currentIdx) btn.classList.add('active');
-        if (userAnswers[i]) btn.classList.add('answered');
-        if (flagged[i]) btn.classList.add('flagged');
-        btn.onclick = () => { currentIdx = i; renderQuestion(); };
-        tabs.appendChild(btn);
-    });
-    document.querySelector('.progress').style.width = ((currentIdx + 1) / questions.length * 100) + '%';
-}
-
-function startTimer(t) {
-    clearInterval(timerInt);
-    timerInt = setInterval(() => {
-        let m = Math.floor(t / 60);
-        let s = t % 60;
-        document.getElementById('timer').textContent = `${m}:${s < 10 ? '0'+s : s}`;
-        if (--t < 0) {
-            clearInterval(timerInt);
-            submitExam();
+    function switchTab(tabName) {
+        Object.values(TABS).forEach(el => el?.classList.add('hidden'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        
+        if (TABS[tabName]) {
+            TABS[tabName].classList.remove('hidden');
+            document.querySelector(`[data-tab="${tabName}"]`)?.classList.add('active');
         }
-    }, 1000);
-}
-
-// Navigation & actions
-document.getElementById('nextBtn').onclick = () => {
-    if (currentIdx < questions.length - 1) {
-        currentIdx++;
-        renderQuestion();
-    } else {
-        document.getElementById('submitBtn').click();
-    }
-};
-document.getElementById('prevBtn').onclick = () => {
-    if (currentIdx > 0) {
-        currentIdx--;
-        renderQuestion();
-    }
-};
-document.getElementById('flagBtn').onclick = () => {
-    flagged[currentIdx] = !flagged[currentIdx];
-    renderQuestion();
-};
-document.getElementById('showAnswerBtn').onclick = () => {
-    answerShown[currentIdx] = !answerShown[currentIdx];
-    renderQuestion();
-};
-
-// Submit logic with nice modal
-document.getElementById('submitBtn').onclick = () => {
-    const unanswered = userAnswers.filter(a => a === null).length;
-    const modal = document.getElementById('submitConfirmModal');
-    const msgEl = document.getElementById('submitConfirmMessage');
-
-    if (unanswered === 0) {
-        msgEl.textContent = "Ready to finish your exam?";
-        document.getElementById('confirmSubmitBtn').textContent = "Finish Exam";
-    } else {
-        msgEl.textContent = `You have ${unanswered} unanswered question${unanswered === 1 ? '' : 's'}.\nAre you sure you want to submit?`;
-        document.getElementById('confirmSubmitBtn').textContent = "Submit Anyway";
+        
+        if (tabName === 'progress') renderProgress();
+        if (tabName === 'review-mode') renderReviewMode();
     }
 
-    modal.style.display = 'flex';
-};
+    function estimateTotalQuestions(course) {
+        return examStructure[course]?.length * 50 || '?';
+    }
 
-document.getElementById('cancelSubmitBtn').onclick = () => {
-    document.getElementById('submitConfirmModal').style.display = 'none';
-};
+    function saveProgress() {
+        localStorage.setItem('gemzeExamProgress', JSON.stringify(progress));
+    }
 
-document.getElementById('confirmSubmitBtn').onclick = () => {
-    document.getElementById('submitConfirmModal').style.display = 'none';
-    submitExam();
-};
-
-function submitExam() {
-    clearInterval(timerInt);
-    
-    let correct = 0;
-    questions.forEach((q, i) => {
-        if (userAnswers[i] && userAnswers[i].toLowerCase() === (q.correct_answer || '').toLowerCase()) {
-            correct++;
-        }
-    });
-
-    const percentage = ((correct / questions.length) * 100).toFixed(1);
-
-    document.getElementById('finalScore').textContent = percentage + '%';
-    document.getElementById('scoreStats').textContent = `${correct} / ${questions.length} correct`;
-
-    document.getElementById('quiz-layout').style.display = 'none';
-    document.getElementById('results-view').classList.remove('hidden');
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function enterReviewMode() {
-    document.getElementById('results-view').classList.add('hidden');
-    document.getElementById('review-view').classList.remove('hidden');
-
-    const container = document.getElementById('reviewContainer');
-    container.innerHTML = '';
-
-    let correctCount = 0;
-
-    questions.forEach((q, i) => {
-        const userAns = userAnswers[i];
-        const correct = (q.correct_answer || '').toLowerCase();
-        const isCorrect = userAns === correct;
-        if (isCorrect) correctCount++;
-
-        const div = document.createElement('div');
-        div.className = 'bg-white rounded-2xl border shadow-sm overflow-hidden';
-
-        let optionsHTML = '';
-        for (let key in q.options) {
-            let className = 'p-4 border-t';
-            let extra = '';
-
-            if (key.toLowerCase() === correct) {
-                className += ' bg-green-50 border-green-300';
-                extra = '<span class="ml-3 font-bold text-green-700">CORRECT</span>';
-            }
-            if (userAns === key) {
-                if (isCorrect) {
-                    className += ' bg-green-100 border-green-400';
-                    extra = '<span class="ml-3 font-bold text-green-800">YOUR CHOICE ✓</span>';
-                } else {
-                    className += ' bg-red-50 border-red-300';
-                    extra = '<span class="ml-3 font-bold text-red-700">YOUR CHOICE</span>';
-                }
-            }
-
-            optionsHTML += `
-                <div class="${className}">
-                    <strong>${key.toUpperCase()}.</strong> ${q.options[key]}${extra}
+    function initDashboard() {
+        const container = document.getElementById('courseContainer');
+        container.innerHTML = '';
+        
+        Object.keys(examStructure).forEach(course => {
+            const box = document.createElement('div');
+            box.className = 'course-box';
+            box.dataset.course = course;
+            box.innerHTML = `
+                <h3 class="text-lg font-black text-[#e2e8f0]">${course}</h3>
+                <p class="text-sm text-[#94a3b8] mt-1">
+                    ${examStructure[course].length} parts • ~${estimateTotalQuestions(course)} questions
+                </p>
+                <div class="exam-options mt-3">
+                    <button class="bg-[#10b981] text-white px-4 py-2 rounded-lg mb-2 w-full font-bold hover:bg-[#059669]"
+                            onclick="startBlitzMode('${course.replace(/'/g,"\\'")}')">
+                        Blitz Mode (All)
+                    </button>
+                    ${examStructure[course].map((path, i) => {
+                        const fileName = path.split('/').pop().replace('.json', '');
+                        let label = fileName;
+                        if (examCodeMap[course]) label = examCodeMap[course][i] || fileName;
+                        return `<button onclick="loadExamDirect('${path}', '${label.replace(/'/g,"\\'")}')">${label}</button>`;
+                    }).join('')}
                 </div>
             `;
+            box.onclick = (e) => {
+                if (e.target.tagName !== 'BUTTON') {
+                    switchTab('course-landing');
+                    showCourseLanding(course);
+                }
+            };
+            container.appendChild(box);
+        });
+    }
+
+    async function showCourseLanding(course) {
+        currentCourse = course;
+        document.getElementById('course-title').textContent = course;
+        document.getElementById('course-stats').textContent = `${examStructure[course].length} exams • Loading...`;
+
+        const focusedList = document.getElementById('focused-mode-list');
+        focusedList.innerHTML = '';
+        focusedList.classList.add('hidden');
+
+        let totalQs = 0;
+        const promises = examStructure[course].map(async (path, i) => {
+            try {
+                const res = await fetch(path);
+                if (!res.ok) return 0;
+                const data = await res.json();
+                const qs = Array.isArray(data) ? data : (data.questions || []);
+                const fileName = path.split('/').pop().replace('.json', '');
+                let label = fileName;
+                if (examCodeMap[course]) label = examCodeMap[course][i] || fileName;
+
+                const box = document.createElement('div');
+                box.className = 'exam-box p-6';
+                box.innerHTML = `
+                    <h3 class="text-lg font-black text-[#e2e8f0]">${label}</h3>
+                    <p class="text-sm text-[#94a3b8] mt-1">${qs.length} questions</p>
+                `;
+                box.onclick = () => loadExamDirect(path, label);
+                focusedList.appendChild(box);
+                return qs.length;
+            } catch (e) {
+                return 0;
+            }
+        });
+
+        const counts = await Promise.all(promises);
+        totalQs = counts.reduce((sum, c) => sum + c, 0);
+        document.getElementById('course-stats').textContent = `${examStructure[course].length} exams • ${totalQs} questions`;
+    }
+
+    function switchToFocusedMode() {
+        document.getElementById('focused-mode-list').classList.remove('hidden');
+    }
+
+    async function startBlitzMode(courseName) {
+        currentCourse = courseName;
+        let allQuestions = [];
+
+        for (const path of examStructure[courseName]) {
+            try {
+                const res = await fetch(path);
+                if (!res.ok) continue;
+                const data = await res.json();
+                const qs = Array.isArray(data) ? data : (data.questions || []);
+                qs.forEach(q => q._sourceFile = path.split('/').pop().replace('.json',''));
+                allQuestions.push(...qs);
+            } catch(e) {
+                console.warn("Skipped:", path);
+            }
         }
 
-        div.innerHTML = `
-            <div class="px-6 py-4 border-b bg-slate-50 flex justify-between items-center">
-                <div class="font-bold text-lg">Question ${i + 1}</div>
-                ${isCorrect ? 
-                    '<span class="px-4 py-1 bg-green-100 text-green-700 rounded-full font-bold">Correct</span>' : 
-                    '<span class="px-4 py-1 bg-red-100 text-red-700 rounded-full font-bold">Incorrect</span>'}
-            </div>
-            <div class="p-6">
-                <p class="text-lg leading-relaxed mb-6">${q.question}</p>
-                <div class="space-y-1">${optionsHTML}</div>
-                <div class="mt-8 pt-6 border-t">
-                    <div class="font-bold text-blue-700 mb-2 uppercase text-sm tracking-wide">Explanation</div>
-                    <p class="text-slate-700 leading-relaxed">${q.explanation || 'No explanation provided.'}</p>
-                </div>
+        if (allQuestions.length === 0) return alert("No questions found.");
+
+        questions = allQuestions;
+        startExam(`${courseName} - Blitz Mode`);
+    }
+
+    async function startMissedQuestions(course) {
+        const data = progress[course];
+        if (!data || !data.missedQuestions?.length) {
+            alert(`No missed questions saved for ${course} yet.`);
+            return;
+        }
+
+        questions = data.missedQuestions.map(m => ({
+            question: m.question,
+            options: {},
+            correct_answer: m.correct,
+            explanation: m.explanation,
+            _sourceFile: m.examLabel
+        }));
+
+        startExam(`${course} - Challenge My Mistakes`);
+    }
+
+    async function loadExamDirect(filePath, label) {
+        try {
+            const response = await fetch(filePath);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            questions = Array.isArray(data) ? data : (data.questions || []);
+            startExam(label);
+        } catch (err) {
+            alert(`Error loading exam:\n${filePath}\n${err.message}`);
+        }
+    }
+
+    function startExam(title) {
+        currentExamTitle = title;
+        document.getElementById('activeExamTitle').textContent = title.toUpperCase();
+        currentIdx = 0;
+        userAnswers = Array(questions.length).fill(null);
+        flagged = Array(questions.length).fill(false);
+        answerShown = Array(questions.length).fill(false);
+        document.getElementById('totalQs').textContent = questions.length;
+        startTime = Date.now(); // record start time for elapsed timer
+        document.getElementById('timer').textContent = '00:00';
+        document.getElementById('quiz-layout').style.display = 'flex';
+        renderQuestion();
+        startElapsedTimer(); // start counting up
+    }
+
+    function startElapsedTimer() {
+        clearInterval(timerInt);
+        timerInt = setInterval(() => {
+            if (!startTime) return;
+            const elapsedMs = Date.now() - startTime;
+            const minutes = Math.floor(elapsedMs / 60000);
+            const seconds = Math.floor((elapsedMs % 60000) / 1000);
+            document.getElementById('timer').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+
+    function renderQuestion() {
+        const q = questions[currentIdx];
+        const area = document.getElementById('quiz-area');
+        
+        let html = `<p class="text-xl font-bold text-[#e2e8f0] mb-8 leading-relaxed">${q.question_number || (currentIdx + 1)}. ${q.question}</p>`;
+        
+        if (reviewMode) {
+            html += `<div class="mb-6 p-4 bg-[#064e3b] border border-[#10b981] rounded-lg text-[#d1fae5]">
+                <strong class="text-[#86efac] block mb-2">Correct Answer:</strong>
+                ${q.options[q.correct_answer] || 'Not available'} (${q.correct_answer?.toUpperCase() || '?'})
+            </div>`;
+            if (q.explanation) {
+                html += `<div class="p-4 bg-[#1e293b] border border-[#334155] rounded-lg">
+                    <strong class="text-[#60a5fa] block mb-2">Explanation:</strong>
+                    ${q.explanation}
+                </div>`;
+            }
+        } else {
+            for (let key in q.options) {
+                const isSelected = userAnswers[currentIdx] === key;
+                html += `
+                    <label class="${isSelected ? 'selected' : ''}">
+                        <input type="radio" name="opt" value="${key}" ${isSelected ? 'checked' : ''} onchange="saveAns('${key}')" class="hidden">
+                        <span class="inline-block w-8 font-black text-[#60a5fa]">${key.toUpperCase()}</span> ${q.options[key]}
+                    </label>
+                `;
+            }
+        }
+
+        html += `
+            <div class="mt-6 flex justify-start">
+                <button class="copy-btn px-5 py-2.5 rounded-lg text-sm font-medium transition"
+                        onclick="copyQuestion(${currentIdx})">
+                    Copy Question & Answer
+                </button>
             </div>
         `;
-        container.appendChild(div);
+
+        area.innerHTML = html;
+
+        const ansDisplay = document.getElementById('answerDisplay');
+        if (!reviewMode && answerShown[currentIdx]) {
+            ansDisplay.style.display = 'block';
+            ansDisplay.innerHTML = `
+                <div class="font-black text-[#86efac]">Correct: ${q.correct_answer?.toUpperCase() || '?'}</div>
+                <div class="text-[#d1fae5] text-sm mt-2">${q.explanation || 'No explanation available'}</div>
+            `;
+        } else if (!reviewMode) {
+            ansDisplay.style.display = 'none';
+        }
+
+        document.getElementById('currentQuestionNum').textContent = currentIdx + 1;
+        document.getElementById('flagBtn').textContent = flagged[currentIdx] ? '🚩 Unflag' : 'Flag';
+        updateTabs();
+    }
+
+    function copyQuestion(index) {
+        const q = questions[index];
+        let optionsText = '';
+        for (let key in q.options) {
+            optionsText += `${key.toUpperCase()}. ${q.options[key]}\n`;
+        }
+
+        const text = `Question ${index + 1}: ${q.question}
+
+Options:
+${optionsText.trim()}
+
+Correct Answer: ${q.correct_answer?.toUpperCase() || '?'}
+Explanation: ${q.explanation || 'No explanation provided.'}
+Source: ${q._sourceFile || 'Unknown'}
+        `.trim();
+
+        navigator.clipboard.writeText(text).catch(err => {
+            console.error('Clipboard copy failed:', err);
+            // Silent fail - no user notification
+        });
+    }
+
+    function saveAns(val) {
+        if (!reviewMode) {
+            userAnswers[currentIdx] = val;
+            updateTabs();
+            renderQuestion();
+        }
+    }
+
+    function updateTabs() {
+        const tabs = document.getElementById('questionTabs');
+        tabs.innerHTML = '';
+        questions.forEach((_, i) => {
+            const btn = document.createElement('button');
+            btn.textContent = i + 1;
+            if (i === currentIdx) btn.classList.add('active');
+            if (userAnswers[i]) btn.classList.add('answered');
+            if (flagged[i]) btn.classList.add('flagged');
+            btn.onclick = () => { currentIdx = i; renderQuestion(); };
+            tabs.appendChild(btn);
+        });
+        document.querySelector('.progress').style.width = ((currentIdx + 1) / questions.length * 100) + '%';
+    }
+
+    document.getElementById('nextBtn').onclick = () => {
+        if (currentIdx < questions.length - 1) {
+            currentIdx++;
+            renderQuestion();
+        } else {
+            document.getElementById('submitBtn').click();
+        }
+    };
+
+    document.getElementById('prevBtn').onclick = () => {
+        if (currentIdx > 0) {
+            currentIdx--;
+            renderQuestion();
+        }
+    };
+
+    document.getElementById('flagBtn').onclick = () => {
+        flagged[currentIdx] = !flagged[currentIdx];
+        renderQuestion();
+    };
+
+    document.getElementById('showAnswerBtn').onclick = () => {
+        answerShown[currentIdx] = !answerShown[currentIdx];
+        renderQuestion();
+    };
+
+    document.getElementById('reviewModeToggle')?.addEventListener('change', e => {
+        reviewMode = e.target.checked;
+        renderQuestion();
     });
 
-    document.getElementById('reviewScore').textContent = `${correctCount} / ${questions.length} correct`;
-    document.getElementById('reviewPercent').textContent = ((correctCount / questions.length) * 100).toFixed(1) + '%';
-}
+    document.getElementById('submitBtn').onclick = () => {
+        const unanswered = userAnswers.filter(a => a === null).length;
+        const modal = document.getElementById('submitConfirmModal');
+        const msgEl = document.getElementById('submitConfirmMessage');
 
-// Search
-document.getElementById('searchInput').addEventListener('input', function() {
-    const term = this.value.toLowerCase();
-    document.querySelectorAll('.course-box').forEach(box => {
-        box.style.display = box.dataset.course.toLowerCase().includes(term) ? 'block' : 'none';
+        if (unanswered === 0 || reviewMode) {
+            msgEl.textContent = "Ready to finish?";
+            document.getElementById('confirmSubmitBtn').textContent = "Finish";
+        } else {
+            msgEl.textContent = `You have ${unanswered} unanswered question${unanswered === 1 ? '' : 's'}. Submit anyway?`;
+            document.getElementById('confirmSubmitBtn').textContent = "Submit Anyway";
+        }
+        modal.style.display = 'flex';
+    };
+
+    document.getElementById('cancelSubmitBtn').onclick = () => {
+        document.getElementById('submitConfirmModal').style.display = 'none';
+    };
+
+    document.getElementById('confirmSubmitBtn').onclick = () => {
+        document.getElementById('submitConfirmModal').style.display = 'none';
+        submitExam();
+    };
+
+    function submitExam() {
+        clearInterval(timerInt);
+        
+        let correct = 0;
+        questions.forEach((q, i) => {
+            if (userAnswers[i] && userAnswers[i].toLowerCase() === (q.correct_answer || '').toLowerCase()) correct++;
+        });
+
+        const percentage = ((correct / questions.length) * 100).toFixed(1);
+
+        document.getElementById('finalScore').textContent = percentage + '%';
+        document.getElementById('scoreStats').textContent = `${correct} / ${questions.length} correct`;
+
+        document.getElementById('quiz-layout').style.display = 'none';
+        document.getElementById('results-view').classList.remove('hidden');
+
+        const courseKey = currentCourse || 'single';
+        if (!progress[courseKey]) progress[courseKey] = { history: [], missedQuestions: [] };
+
+        const missed = [];
+        questions.forEach((q, i) => {
+            const ua = userAnswers[i];
+            if (ua && ua.toLowerCase() !== (q.correct_answer || '').toLowerCase()) {
+                missed.push({
+                    examLabel: currentExamTitle,
+                    questionIdx: i,
+                    question: q.question,
+                    yourAnswer: ua,
+                    correct: q.correct_answer,
+                    explanation: q.explanation || ''
+                });
+            }
+        });
+
+        progress[courseKey].history.push({
+            date: new Date().toISOString().split('T')[0],
+            exam: currentExamTitle,
+            score: correct,
+            total: questions.length,
+            missed: missed.length
+        });
+
+        progress[courseKey].missedQuestions = [
+            ...progress[courseKey].missedQuestions,
+            ...missed
+        ].slice(-200);
+
+        saveProgress();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderProgress() {
+        const container = document.getElementById('progress-courses');
+        container.innerHTML = '';
+
+        if (Object.keys(progress).length === 0) {
+            container.innerHTML = '<p class="text-[#94a3b8] text-center py-12">No exams taken yet.</p>';
+            return;
+        }
+
+        Object.entries(progress).forEach(([course, data]) => {
+            if (course === 'single') return;
+
+            const latest = data.history?.[data.history.length-1] || {score:0, total:0};
+            const avg = data.history?.length 
+                ? (data.history.reduce((s,h)=>s+h.score,0) / data.history.length / latest.total * 100).toFixed(0)
+                : 0;
+
+            const div = document.createElement('div');
+            div.className = 'bg-[#1e293b] rounded-xl border border-[#334155] shadow-sm p-6';
+            div.innerHTML = `
+                <h3 class="text-xl font-bold text-[#e2e8f0]">${course}</h3>
+                <div class="mt-4 space-y-2 text-sm text-[#94a3b8]">
+                    <div>Attempts: <strong class="text-[#e2e8f0]">${data.history?.length || 0}</strong></div>
+                    <div>Best: <strong class="text-[#60a5fa]">${latest.score}/${latest.total} (${((latest.score/latest.total||0)*100).toFixed(0)}%)</strong></div>
+                    <div>Avg: <strong class="text-[#60a5fa]">${avg}%</strong></div>
+                    <div>Missed Bank: <strong class="text-[#ef4444]">${data.missedQuestions?.length || 0}</strong></div>
+                </div>
+                <div class="mt-5 grid grid-cols-2 gap-3">
+                    <button class="bg-[#10b981] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#059669]"
+                            onclick="startMissedQuestions('${course.replace(/'/g,"\\'")}')">
+                        Challenge Mistakes
+                    </button>
+                    <button class="bg-[#60a5fa] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#3b82f6]"
+                            onclick="showMissedQuestions('${course.replace(/'/g,"\\'")}')">
+                        View Missed
+                    </button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function renderReviewMode() {
+        const container = document.getElementById('review-mode-courses');
+        container.innerHTML = '';
+
+        Object.keys(examStructure).forEach(course => {
+            const box = document.createElement('div');
+            box.className = 'bg-[#1e293b] rounded-xl border border-[#334155] shadow-sm p-6 cursor-pointer hover:border-[#60a5fa]';
+            box.innerHTML = `
+                <h3 class="text-xl font-bold text-[#e2e8f0]">${course}</h3>
+                <p class="text-[#94a3b8] mt-2">Scroll through all questions for rapid review</p>
+            `;
+            box.onclick = () => startReviewMode(course);
+            container.appendChild(box);
+        });
+    }
+
+    async function startReviewMode(courseName) {
+        if (!examStructure[courseName]) return alert("Course not found");
+
+        let allQuestions = [];
+
+        for (const path of examStructure[courseName]) {
+            try {
+                const res = await fetch(path);
+                if (!res.ok) continue;
+                const data = await res.json();
+                const qs = Array.isArray(data) ? data : (data.questions || []);
+                qs.forEach(q => q._sourceFile = path.split('/').pop().replace('.json',''));
+                allQuestions.push(...qs);
+            } catch(e) {
+                console.warn("Skipped:", path);
+            }
+        }
+
+        if (allQuestions.length === 0) return alert("No questions found.");
+
+        questions = allQuestions;
+        reviewMode = true;
+        document.getElementById('reviewModeToggle').checked = true;
+        startExam(`${courseName} - Review Mode`);
+    }
+
+    function clearProgress() {
+        if (confirm("Are you sure you want to clear all progress? This cannot be undone.")) {
+            localStorage.removeItem('gemzeExamProgress');
+            progress = {};
+            renderProgress();
+        }
+    }
+
+    // Initial setup
+    switchTab('dashboard');
+    initDashboard();
+
+    document.getElementById('searchInput')?.addEventListener('input', function() {
+        const term = this.value.toLowerCase();
+        document.querySelectorAll('.course-box').forEach(box => {
+            box.style.display = box.dataset.course.toLowerCase().includes(term) ? 'block' : 'none';
+        });
     });
-});
-
-// Start
-initDashboard();
-</script>
+    </script>
 </body>
+
 </html>
